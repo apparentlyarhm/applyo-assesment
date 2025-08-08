@@ -3,15 +3,16 @@ import { jetbrains, nunito } from "@/config/fonts";
 import clsx from "clsx";
 import { TextField, Flex, Separator } from "@radix-ui/themes";
 import { Search, Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, arrayMove } from "@dnd-kit/sortable";
 import { SortableTaskCard } from "@/components/sortable-task-card";
+import { initiateLogin } from "@/utils/auth-utils";
 
 
 export default function Home() {
 
-  const user = null
+  const [user, setUser] = useState<null | { id: string; avatar: string; token: string }>(null); // Keeping it simple
 
   const [allBoards, setAllBoards] = useState([
 
@@ -47,6 +48,27 @@ export default function Home() {
         );
       });
     }
+  }
+
+  useEffect(() => {
+    const token = localStorage.getItem("app_token");
+    const id = localStorage.getItem("id");
+    const avatar = localStorage.getItem("avatar");
+
+    if (token && id && avatar) {
+      setUser({ id, avatar, token });
+    } else {
+      setUser(null);
+    }
+  }, []);
+
+  function handleLogout() {
+    localStorage.removeItem("app_token");
+    localStorage.removeItem("id");
+    localStorage.removeItem("avatar");
+    setUser(null);
+    
+    window.location.reload();
   }
 
   const priorityTasks = tasks.filter((task) => task.priority);
@@ -167,25 +189,26 @@ export default function Home() {
         {/* Bottom section: user login status */}
         <div className="border-t border-gray-200 px-6 py-4">
           {user ? (
-            <>
-              <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="flex flex-col items-center gap-2">
                 <img
                   src={user.avatar || "/default-avatar.png"}
                   alt="Avatar"
-                  className="w-8 h-8 rounded-full"
+                  className="w-12 h-12 rounded-full"
                 />
-                <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                <span className="text-sm font-medium text-gray-700">{user.id}</span>
               </div>
               <button
-                onClick={() => alert("logout")}
-                className="text-xs text-red-500 hover:underline"
+                onClick={() => handleLogout()}
+                className="flex items-center gap-2 text-xs text-red-500 hover:cursor-pointer bg-red-50 px-4 py-2 rounded-xl hover:bg-red-100 hover:text-red-600"
               >
+                <LogOut size={16} className="mr-1" />
                 Log out
               </button>
-            </>
+            </div>
           ) : (
             <div
-              onClick={() => alert("create modal")}
+              onClick={() => initiateLogin()}
               className="flex items-center hover:bg-gray-300 mt-2 justify-center py-2 bg-gray-100 rounded-lg cursor-pointer"
             >
               <User2Icon size={16} className="text-blue-600" />
