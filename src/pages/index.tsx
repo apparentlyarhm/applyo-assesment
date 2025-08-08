@@ -1,115 +1,211 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import TaskCard from "@/components/task-card";
+import { jetbrains, nunito } from "@/config/fonts";
+import clsx from "clsx";
+import { TextField, Flex, Separator } from "@radix-ui/themes";
+import { Search, Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon } from "lucide-react";
+import { useState } from "react";
+import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core";
+import { SortableContext, arrayMove } from "@dnd-kit/sortable";
+import { SortableTaskCard } from "@/components/sortable-task-card";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export default function Home() {
+
+  const user = null
+
+  const [allBoards, setAllBoards] = useState([
+
+  ])
+
+  const [tasks, setTasks] = useState([
+
+  ])
+  const [activeTask, setActiveTask] = useState(null); // State for the currently dragged item
+
+  function handleDragStart(event) {
+    const { active } = event;
+    setActiveTask(tasks.find((task) => task.id === active.id));
+  }
+
+  function handleDragEnd(event: any) {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const overContainerId = over.data.current?.sortable.containerId; // Find the container ID of where the item was dropped
+      setTasks((currentTasks) => {
+        const activeTask = currentTasks.find((task) => task.id === active.id); // Find the dragged task
+
+        if (!activeTask) return currentTasks;
+
+        const newPriority = overContainerId === "priority-column";
+        if (activeTask.priority === newPriority) {
+          return currentTasks;
+        }
+
+        return currentTasks.map((task) =>
+          task.id === active.id ? { ...task, priority: newPriority } : task
+        );
+      });
+    }
+  }
+
+  const priorityTasks = tasks.filter((task) => task.priority);
+  const nonPriorityTasks = tasks.filter((task) => !task.priority);
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20`}
-    >
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="flex p-10 gap-5 h-screen w-screen bg-gray-50 items-center text-center justify-center">
+      <div className="flex-[4_1_0] border border-gray-200 w-full h-full rounded-3xl bg-white flex flex-col">
+
+        <div className="flex gap-3 px-6 py-6 items-center">
+          <p className={clsx("font-extrabold text-3xl text-gray-900", jetbrains.className)}>
+            Board Name
+          </p>
+
+          <Pencil size={26} className="hover:bg-gray-200 hover:cursor-pointer rounded-md p-1" />
+
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <Separator size="4" />
+
+        {/* DndContext wraps the entire draggable area */}
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+          <div className="flex flex-1 px-6 py-6 gap-6 overflow-y-auto">
+            {/* Priority */}
+
+            {/* SortableContext requires a unique ID and the list of item IDs */}
+            <SortableContext id="priority-column" items={priorityTasks.map(t => t.id)}>
+              <div className="flex-1 rounded-xl p-4 border border-gray-200">
+
+                <p
+                  className={clsx(
+                    "font-bold text-lg text-blue-600 mb-4",
+                    nunito.className
+                  )}
+                >
+                  Priority
+                </p>
+
+                <div className="flex flex-col items-center gap-3">
+                  {priorityTasks.length > 0 ? (
+                    priorityTasks.map((task) => (
+                      <SortableTaskCard key={task.id} {...task} />
+                    ))
+                  ) : (
+                    <CreateTaskComponent />
+                  )}
+                </div>
+
+              </div>
+            </SortableContext>
+
+            {/* Non-priority */}
+            <SortableContext id="non-priority-column" items={nonPriorityTasks.map(t => t.id)}>
+              <div className="flex-1 rounded-xl p-4 border border-gray-200 ">
+
+                <p
+                  className={clsx(
+                    "font-bold text-lg text-gray-700 mb-4",
+                    nunito.className
+                  )}
+                >
+                  Non-priority
+                </p>
+
+                <div className="flex flex-col items-center gap-3">
+                  {nonPriorityTasks.length > 0 ? (
+                    nonPriorityTasks.map((task) => (
+                      <SortableTaskCard key={task.id} {...task} />
+                    ))
+                  ) : (
+                    <CreateTaskComponent />
+
+                  )}
+                </div>
+              </div>
+            </SortableContext>
+
+            <DragOverlay>
+              {activeTask ? (
+                // Render a non-sortable TaskCard inside the overlay
+                // It will now respect its own styling (like max-w-lg)
+                // and not be affected by `w-full`
+                <TaskCard {...activeTask} />
+              ) : null}
+            </DragOverlay>
+          </div>
+        </DndContext>
+      </div>
+
+      {/* All boards div */}
+      <div className="flex-[1_1_0] w-full h-full border border-gray-200 rounded-3xl bg-white">
+        <div className="flex-1 min-h-[200px] gap-10 px-6 py-8 items-start text-start">
+          <p className={clsx("font-extrabold text-xl text-gray-900", jetbrains.className)}>
+            Boards
+          </p>
+
+          <div className="mt-3">
+            {allBoards.map((item) => (
+              <div
+                key={item.id}
+                className="flex justify-between py-2 hover:bg-gray-200 rounded-lg cursor-pointer"
+              >
+                <p className="px-2 text-sm">{item.title}</p>
+                <Trash size={14} className="text-red-400 mr-4" />
+              </div>
+            ))}
+            <div
+              onClick={() => alert("create modal")}
+              className="flex items-center hover:bg-gray-300 mt-2 justify-center py-2 bg-gray-100 rounded-lg cursor-pointer"
+            >
+              <PlusCircle size={16} className="text-blue-600" />
+              <p className="px-2 text-sm">Create new</p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Bottom section: user login status */}
+        <div className="border-t border-gray-200 px-6 py-4">
+          {user ? (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <img
+                  src={user.avatar || "/default-avatar.png"}
+                  alt="Avatar"
+                  className="w-8 h-8 rounded-full"
+                />
+                <span className="text-sm font-medium text-gray-700">{user.name}</span>
+              </div>
+              <button
+                onClick={() => alert("logout")}
+                className="text-xs text-red-500 hover:underline"
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <div
+              onClick={() => alert("create modal")}
+              className="flex items-center hover:bg-gray-300 mt-2 justify-center py-2 bg-gray-100 rounded-lg cursor-pointer"
+            >
+              <User2Icon size={16} className="text-blue-600" />
+              <p className="px-2 text-sm">Sign in to save boards and tasks</p>
+            </div>
+
+          )}
+        </div>
+
+      </div>
     </div>
   );
+}
+
+export function CreateTaskComponent() {
+  return (
+    <div
+    onClick={() => alert("create task!")} 
+    className="flex justify-center items-center h-48 hover:bg-gray-100 w-full cursor-pointer rounded-lg border-2 border-dashed border-gray-300">
+      <p className="text-gray-400">Create or drop tasks here</p>
+    </div>
+  )
 }
