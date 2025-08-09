@@ -1,12 +1,13 @@
 "use client";
 
 import { nunito } from "@/config/fonts";
+import { useUserDataContext } from "@/contexts/user-data-context";
+import { useUserData } from "@/hooks/useUserData";
 import { addBoard } from "@/utils/data-utils";
 import * as Dialog from "@radix-ui/react-dialog";
 import clsx from "clsx";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 
 interface CreateBoardDialogProps {
   email: string;
@@ -14,11 +15,12 @@ interface CreateBoardDialogProps {
 
 export default function CreateBoardDialog({ email }: CreateBoardDialogProps) {
   const [name, setName] = useState("");
+  const { addBoard } = useUserDataContext()
 
   const handleSubmit = () => {
     if (!name.trim()) return;
 
-    addBoard(email, name.trim());
+    addBoard(name.trim())
 
     // reset
     setName("");
@@ -37,7 +39,7 @@ export default function CreateBoardDialog({ email }: CreateBoardDialogProps) {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50" />
         <Dialog.Content className={clsx("fixed top-1/2 left-1/2 w-[100%] max-w-md -translate-x-1/2 -translate-y-1/2 bg-white py-7 px-5 rounded-lg", nunito.className)}>
-          <Dialog.Title className="text-lg font-bold">Create Board</Dialog.Title>
+          <Dialog.Title className="text-lg font-bold">Create a Board!</Dialog.Title>
 
           <input
             type="text"
