@@ -1,33 +1,42 @@
 'use client'
 
 import { jetbrains, nunito } from '@/config/fonts'
+import { useUserDataContext } from '@/contexts/user-data-context'
 import { Card, Text, Flex, Switch, Box } from '@radix-ui/themes'
 import clsx from 'clsx'
 import { formatDistanceToNowStrict, isPast } from 'date-fns'
-import { CheckCircle, Circle } from 'lucide-react'
 
-type TaskCardProps = {
+export type TaskCardProps = {
+  id: string;
+  boardId: string;
   title: string
   description?: string
-  createdAt: Date
+  createdAt: string
   dueDate: Date
   status: 'pending' | 'completed'
-  onStatusToggle: () => void
 }
 
 export default function TaskCard({
+  id,
+  boardId,
   title,
   description,
   createdAt,
   dueDate,
   status,
-  onStatusToggle
 }: TaskCardProps) {
   const isCompleted = status === 'completed'
   const dueText = formatDistanceToNowStrict(dueDate, { addSuffix: true })
 
+  const { editTask } = useUserDataContext()
+
+  const handleStatusToggle = () => {
+    const newStatus = isCompleted ? 'pending' : 'completed';
+    editTask(boardId, id, { status: newStatus });
+  };
+
   return (
-    <Card size="1" variant="classic" className="w-full border-0.5 border-gray-200 min-w-md transition-shadow hover:shadow-md cursor-grab">
+    <Card size="1" variant="classic" className="w-full min-w-md hover:bg-gray-200 cursor-pointer shadow-none">
       <Flex direction="column" gap="5">
 
         <Flex justify="between" align="start" gap='2'>
@@ -44,7 +53,7 @@ export default function TaskCard({
 
             <Switch
               checked={isCompleted}
-              onCheckedChange={onStatusToggle}
+              onCheckedChange={handleStatusToggle}
               color={isCompleted ? 'green' : 'gray'}
             />
 
@@ -60,7 +69,7 @@ export default function TaskCard({
         <Flex justify="between" pt="2" style={{ borderTop: '1px solid var(--gray-a3)' }}>
           
           <Text size="1" color="gray">
-            Created: {createdAt.toLocaleDateString()}
+            Created: {createdAt}
           </Text>
 
           <Text
