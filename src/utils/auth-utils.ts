@@ -1,4 +1,6 @@
 import API_ENDPOINTS from "@/config/endpoint-config";
+import type { NextApiRequest } from 'next';
+import jwt from 'jsonwebtoken';
 
 // I have completely re-used something i wrote in spring boot..
 
@@ -9,6 +11,11 @@ interface CallbackResponse {
   avatar: string
 }
 
+interface DecodedToken {
+  userId: string;
+  iat: number;
+  exp: number;
+}
 
 export async function handleLoginCallback(code: string): Promise<CallbackResponse> {
   try {
@@ -56,5 +63,28 @@ export async function initiateLogin(): Promise<void> {
   } catch (error) {
     console.error("Login initiation failed:", error);
     alert("Could not start the login process. Please try again.");
+  }
+}
+
+export function getUserIdFromRequest(req: NextApiRequest): string | null {
+  try {
+    const authHeader = req.headers.authorization;
+    console.log('Auth Header:', authHeader)
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!)
+
+
+    // TODO: can be improved.
+    const userId = JSON.parse(JSON.stringify(decoded))['sub'].replace('github|', '')
+    return userId;
+
+  } catch (error) {
+    console.error('Invalid token:', error);
+    return null;
   }
 }

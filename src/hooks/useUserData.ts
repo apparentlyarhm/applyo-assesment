@@ -26,24 +26,60 @@ export type TaskStatus = 'pending' | 'completed';
 
 const STORAGE_KEY = 'appData'; // A single key for the logged-in user
 
+// TODO: rename userEmail to userId and make sure its correct and shit
 export function useUserData(userEmail: string | null) {
     const [userData, setUserData] = useState<UserData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
-        if (!userEmail) {
+        const storageKey = userEmail ? `userData-${userEmail}` : null;
+        if (!storageKey) {
             setIsLoading(false);
             return;
         }
 
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-            setUserData(JSON.parse(raw));
-        } else {
-            setUserData({ boards: [] });
-        }
-        setIsLoading(false);
-    }, [userEmail]); // Re-run if the user logs in/out
+        const token = localStorage.getItem('app_token')
+        const loadData = async () => {
+            setIsLoading(true);
+
+            // attempt to fetch from DB if it's a real user
+            // TODO: fix logic
+            if (userEmail && userEmail !== 'anonymous' || token) {
+                try {
+                    const response = await fetch('/api/data/sync', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+
+                    });
+                    if (response.ok) {
+                        const { data } = await response.json();
+
+                        setUserData({ boards: data.boards });
+
+                        localStorage.setItem(storageKey, JSON.stringify({ boards: data.boards }));
+                        setIsLoading(false);
+
+                        return; // Exit here, we are done
+                    }
+
+                } catch (error) {
+                    console.error("Failed to fetch cloud data, falling back to local.", error);
+                }
+            }
+
+            // --- FALLBACK LOGIC ---
+            // This runs for anonymous users, or if the API fetch fails or returns a 404.
+            const localData = localStorage.getItem(storageKey);
+            setUserData(localData ? JSON.parse(localData) : { boards: [] });
+            setIsLoading(false);
+        };
+
+        loadData();
+    }, [userEmail]);
 
 
     useEffect(() => {
@@ -123,26 +159,26 @@ export function useUserData(userEmail: string | null) {
     }, []);
 
     const editBoardName = useCallback((boardId: string, newName: string) => {
-    if (!newName.trim()) return;
+        if (!newName.trim()) return;
 
-    setUserData(prev => {
-      if (!prev) return null;
+        setUserData(prev => {
+            if (!prev) return null;
 
-      const updatedBoards = prev.boards.map(board => {
-        // If this isn't the board we're looking for, return it as-is
-        if (board.id !== boardId) {
-          return board;
-        }
+            const updatedBoards = prev.boards.map(board => {
+                // If this isn't the board we're looking for, return it as-is
+                if (board.id !== boardId) {
+                    return board;
+                }
 
-        return { ...board, title: newName.trim() };
-      });
-      return { ...prev, boards: updatedBoards };
-    });
-  }, []);
+                return { ...board, title: newName.trim() };
+            });
+            return { ...prev, boards: updatedBoards };
+        });
+    }, []);
 
     const editTask = useCallback((boardId: string, taskId: string, updates: Partial<Task>) => {
         console.log(`HOOK: editTask received -> boardId: ${boardId}, taskId: ${taskId}, updates:`, updates);
-        
+
         setUserData(prev => {
             if (!prev) return null;
             const newBoards = prev.boards.map(board => {
@@ -166,24 +202,42 @@ export function useUserData(userEmail: string | null) {
         editTask(boardId, taskId, { priority });
     };
 
-    //  sync to MongoDB
-    //   const syncToDatabase = async () => {
-    //     if (!userData) return;
-    //     console.log("Syncing to DB:", userData);
-    //     // await fetch('/api/user/sync', {
-    //     //   method: 'POST',
-    //     //   body: JSON.stringify(userData)
-    //     // });
-    //   };
+    const syncToDatabase = useCallback(async () => {
+        // Don't sync if there's no data or not logged in with a real ID or token doesnt exist..
+        const token = localStorage.getItem('app_token')
+
+        if (!userData || !token || !userEmail || userEmail === 'anonymous') return;
+
+        setIsSyncing(true);
+        try {
+            await fetch('/api/data/sync', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ boards: userData.boards }),
+            });
+
+        } catch (error) {
+
+            // could show an error toast here
+
+        } finally {
+            setIsSyncing(false);
+        }
+    }, [userData, userEmail]);
 
     return {
         isLoading,
         boards: userData?.boards ?? [],
+        isSyncing,
         getBoard,
         addBoard,
         editBoardName,
         addTask,
         editTask,
+        syncToDatabase,
         removeBoard,
         removeTask,
         setTaskPriority,

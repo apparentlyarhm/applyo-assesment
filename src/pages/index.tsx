@@ -17,7 +17,9 @@ export default function Home() {
   const {
     boards,
     removeBoard,
-    editBoardName
+    editBoardName,
+    isSyncing,
+    syncToDatabase
   } = useUserDataContext()
 
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
@@ -217,11 +219,17 @@ export default function Home() {
 
               <div className="flex flex-col gap-5">
                 <button
-                  onClick={() => alert("coming soon!")}
-                  className="flex items-center gap-2 text-xs text-blue-500 hover:cursor-pointer bg-blue-50 px-4 py-2 rounded-xl hover:bg-blue-100 hover:blue-red-600"
+                  onClick={syncToDatabase}
+                  disabled={isSyncing}
+                  className={clsx(
+                    "flex items-center gap-2 text-xs px-4 py-2 rounded-xl",
+                    isSyncing
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-50 text-blue-500 hover:cursor-pointer hover:bg-blue-100"
+                  )}
                 >
                   <CloudUploadIcon size={16} />
-                  Sync to cloud
+                  {isSyncing ? "Syncing..." : "Sync to cloud"}
                 </button>
 
                 <button
