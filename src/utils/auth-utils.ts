@@ -11,12 +11,6 @@ interface CallbackResponse {
   avatar: string
 }
 
-interface DecodedToken {
-  userId: string;
-  iat: number;
-  exp: number;
-}
-
 export async function handleLoginCallback(code: string): Promise<CallbackResponse> {
   try {
     const res = await fetch(`${API_ENDPOINTS.CALLBACK}?code=${encodeURIComponent(code)}`, {
@@ -69,8 +63,6 @@ export async function initiateLogin(): Promise<void> {
 export function getUserIdFromRequest(req: NextApiRequest): string | null {
   try {
     const authHeader = req.headers.authorization;
-    console.log('Auth Header:', authHeader)
-
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return null;
     }
@@ -78,9 +70,8 @@ export function getUserIdFromRequest(req: NextApiRequest): string | null {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET!)
 
-
     // TODO: can be improved.
-    const userId = JSON.parse(JSON.stringify(decoded))['sub'].replace('github|', '')
+    const userId = JSON.parse(JSON.stringify(decoded))['sub'].replace('github|', '') // solve github shenanigans
     return userId;
 
   } catch (error) {
