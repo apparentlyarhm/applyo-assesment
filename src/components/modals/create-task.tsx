@@ -4,8 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { addTask, Board } from "@/utils/data-utils";
-import { useUserData } from "@/hooks/useUserData";
+import { Board, useUserData } from "@/hooks/useUserData";
 import { useUserDataContext } from "@/contexts/user-data-context";
 import clsx from "clsx";
 import { Star } from "lucide-react";
@@ -32,7 +31,7 @@ export default function CreateTaskDialog({ email, currentBoard }: CreateTaskDial
             description: description,
             priority: priority,
             status: 'pending',
-            dueDate: dueDate?.toISOString()
+            dueDate: dueDate?.toISOString() ?? null,
         });
 
         // we reset

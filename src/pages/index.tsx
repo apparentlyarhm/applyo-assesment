@@ -10,6 +10,7 @@ import CreateBoardDialog from "@/components/modals/create-board";
 import { useUserDataContext } from "@/contexts/user-data-context";
 import { useAuth } from "@/contexts/auth-context";
 import Image from "next/image";
+import { Task } from "@/hooks/useUserData";
 
 export default function Home() {
   const { user, logout } = useAuth()
@@ -24,7 +25,8 @@ export default function Home() {
 
   const tasks = activeBoard?.tasks ?? [];
 
-  const [activeTask, setActiveTask] = useState(null); // State for the currently dragged item
+  // TODO: fix
+  const [activeTask, setActiveTask] = useState<Task | undefined | null>(null); // State for the currently dragged item
 
   useEffect(() => {
     if (!activeBoardId && boards.length > 0) {
@@ -40,12 +42,6 @@ export default function Home() {
       removeBoard(boardIdToDelete);
     }
   };
-
-  function handleDragStart(event) {
-    const { active } = event;
-    // Find the task from our derived 'tasks' array
-    setActiveTask(tasks.find((task) => task.id === active.id));
-  }
 
   const priorityTasks = tasks.filter((task) => task.priority);
   const nonPriorityTasks = tasks.filter((task) => !task.priority);
@@ -167,7 +163,7 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center gap-4">
                 <div className="flex flex-col items-center gap-2">
 
-                  <Image
+                  <img
                     src={user.avatar || "/default-avatar.png"}
                     alt="Avatar"
                     className="w-7 h-7 rounded-full"

@@ -12,7 +12,7 @@ export type TaskCardProps = {
   title: string
   description?: string
   createdAt: string
-  dueDate: Date
+  dueDate: Date | string | null
   status: 'pending' | 'completed'
 }
 
@@ -26,7 +26,10 @@ export default function TaskCard({
   status,
 }: TaskCardProps) {
   const isCompleted = status === 'completed'
-  const dueText = formatDistanceToNowStrict(dueDate, { addSuffix: true })
+
+  if (dueDate){
+    const dueText = formatDistanceToNowStrict(dueDate, { addSuffix: true })
+  }
 
   const { editTask } = useUserDataContext()
 
@@ -72,13 +75,19 @@ export default function TaskCard({
             Created: {createdAt}
           </Text>
 
-          <Text
-            size="1"
-            color={isPast(dueDate) && !isCompleted ? 'red' : 'gray'}
-            weight={isPast(dueDate) && !isCompleted ? 'medium' : 'regular'}
-          >
-            Due {dueText}
-          </Text>
+          {dueDate ? (
+            <Text
+              size="1"
+              color={isPast(dueDate) && !isCompleted ? 'red' : 'gray'}
+              weight={isPast(dueDate) && !isCompleted ? 'medium' : 'regular'}
+            >
+              Due {formatDistanceToNowStrict(dueDate, { addSuffix: true })}
+            </Text>
+          ) : (
+            <Text size="1" color="gray">
+              No due date
+            </Text>
+          )}
 
         </Flex>
       </Flex>

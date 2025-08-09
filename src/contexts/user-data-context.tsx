@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from 'react';
+import { createContext, ReactNode, useContext } from 'react';
 import { useUserData } from '../hooks/useUserData';
 
 type UserDataContextType = ReturnType<typeof useUserData>;
@@ -9,7 +9,7 @@ type UserDataContextType = ReturnType<typeof useUserData>;
 const UserDataContext = createContext<UserDataContextType | null>(null);
 
 // "entrance" to the tunnel.
-export function UserDataProvider({ children, user }) {
+export function UserDataProvider({ children, user }: {children: ReactNode, user: { id: string; avatar: string; token: string } | null}) {
   // We determine the userId here. If there's a logged-in user, use their ID.
   // Otherwise, use the fallback "anonymous" ID.
   const userId = user?.id ?? "anonymous";

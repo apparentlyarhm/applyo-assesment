@@ -6,7 +6,7 @@ export type Task = {
     title: string;
     description?: string;
     createdAt: string;
-    dueDate: string;
+    dueDate: string | null;
     status: TaskStatus;
     priority: boolean
 };
@@ -73,10 +73,11 @@ export function useUserData(userEmail: string | null) {
         return userData?.boards.find(b => b.id === boardId);
     }, [userData]);
 
-    const addTask = useCallback((boardId: string, taskData: Omit<Task, 'id' | 'createdAt'>) => {
+    const addTask = useCallback((boardId: string, taskData: Omit<Task, 'id' | 'createdAt' | 'boardId'>) => {
         const newTask: Task = {
             ...taskData,
             id: crypto.randomUUID(),
+            boardId: boardId,
             createdAt: new Date().toISOString(),
         };
 
