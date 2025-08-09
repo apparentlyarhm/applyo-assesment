@@ -1,7 +1,7 @@
 import { jetbrains, nunito } from "@/config/fonts";
 import clsx from "clsx";
 import { Separator } from "@radix-ui/themes";
-import { Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon, PlusSquareIcon, CloudUploadIcon } from "lucide-react";
+import { Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon, PlusSquareIcon, CloudUploadIcon, Check, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { SortableTaskCard } from "@/components/sortable-task-card";
 import { initiateLogin } from "@/utils/auth-utils";
@@ -9,13 +9,16 @@ import CreateTaskDialog from "@/components/modals/create-task";
 import CreateBoardDialog from "@/components/modals/create-board";
 import { useUserDataContext } from "@/contexts/user-data-context";
 import { useAuth } from "@/contexts/auth-context";
-import Image from "next/image";
 import { Task } from "@/hooks/useUserData";
 
 export default function Home() {
   const { user, logout } = useAuth()
 
-  const { boards, removeBoard } = useUserDataContext()
+  const {
+    boards,
+    removeBoard,
+    editBoardName
+  } = useUserDataContext()
 
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const activeBoard = useMemo(
@@ -37,7 +40,7 @@ export default function Home() {
   const handleDeleteBoard = (boardIdToDelete: string) => {
     if (window.confirm("Are you sure you want to delete this board and all its tasks?")) {
       if (activeBoardId === boardIdToDelete) {
-        setActiveBoardId(null); // Or set to the next available board
+        setActiveBoardId(null); // perhaps next available board?
       }
       removeBoard(boardIdToDelete);
     }
@@ -46,21 +49,55 @@ export default function Home() {
   const priorityTasks = tasks.filter((task) => task.priority);
   const nonPriorityTasks = tasks.filter((task) => !task.priority);
 
+  const [isEditingBoardName, setIsEditingBoardName] = useState(false);
+  const [editedBoardName, setEditedBoardName] = useState("");
+
+  const handleStartEdit = () => {
+    if (!activeBoard) return;
+    setEditedBoardName(activeBoard.title); // Pre-fill the input with the current name
+    setIsEditingBoardName(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!activeBoard) return;
+    editBoardName(activeBoard.id, editedBoardName);
+    setIsEditingBoardName(false); 
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingBoardName(false);
+  };
+
   return (
     <div className="flex p-10 gap-5 h-screen w-screen bg-gray-50 items-center text-center justify-center">
       <div className="flex-[4_1_0] border border-gray-200 w-full h-full rounded-3xl bg-white flex flex-col">
 
-        <div className="flex gap-3 px-6 py-6 items-center">
-          {activeBoard ? (
+        <div className={clsx("flex gap-3 px-6 py-6 items-center", jetbrains.className)}>
+          {isEditingBoardName ? (
+            // --- EDITING VIEW ---
             <>
-              <p className={clsx("font-extrabold text-3xl text-gray-900", jetbrains.className)}>
-                {activeBoard.title}
-              </p>
-
-              <Pencil size={26} className="hover:bg-gray-200 hover:cursor-pointer rounded-md p-1" />
+              <input
+                type="text"
+                value={editedBoardName}
+                onChange={(e) => setEditedBoardName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
+                className="font-extrabold text-2xl text-gray-900 border-1 border-gray-200 rounded-xl py-3 px-4 outline-none"
+                autoFocus
+              />
+              <button onClick={handleSaveEdit} className="p-1 rounded-md hover:bg-green-100 hover:cursor-pointer"><Check className="text-green-600" size={20} /></button>
+              <button onClick={handleCancelEdit} className="p-1 rounded-md hover:bg-red-100 hover:cursor-pointer"><X className="text-red-600" size={20} /></button>
             </>
           ) : (
-            <></>
+            <>
+              <p className="font-extrabold text-3xl py-3 pl-4  text-gray-900">
+                {activeBoard ? activeBoard.title : "Select a Board"}
+              </p>
+              {activeBoard && (
+                <button onClick={handleStartEdit} className="hover:bg-gray-200 hover:cursor-pointer rounded-md p-1">
+                  <Pencil size={18} />
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -173,7 +210,7 @@ export default function Home() {
 
                 </div>
 
-                
+
               </div>
 
               <Separator orientation={"vertical"} size={"3"} />
@@ -194,6 +231,7 @@ export default function Home() {
                   <LogOut size={16} className="mr-1" />
                   Log out
                 </button>
+                
               </div>
 
             </div>

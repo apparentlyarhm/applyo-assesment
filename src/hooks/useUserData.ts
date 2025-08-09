@@ -122,6 +122,24 @@ export function useUserData(userEmail: string | null) {
         });
     }, []);
 
+    const editBoardName = useCallback((boardId: string, newName: string) => {
+    if (!newName.trim()) return;
+
+    setUserData(prev => {
+      if (!prev) return null;
+
+      const updatedBoards = prev.boards.map(board => {
+        // If this isn't the board we're looking for, return it as-is
+        if (board.id !== boardId) {
+          return board;
+        }
+
+        return { ...board, title: newName.trim() };
+      });
+      return { ...prev, boards: updatedBoards };
+    });
+  }, []);
+
     const editTask = useCallback((boardId: string, taskId: string, updates: Partial<Task>) => {
         console.log(`HOOK: editTask received -> boardId: ${boardId}, taskId: ${taskId}, updates:`, updates);
         
@@ -163,6 +181,7 @@ export function useUserData(userEmail: string | null) {
         boards: userData?.boards ?? [],
         getBoard,
         addBoard,
+        editBoardName,
         addTask,
         editTask,
         removeBoard,
