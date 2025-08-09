@@ -3,7 +3,6 @@
 import { nunito } from "@/config/fonts";
 import { useUserDataContext } from "@/contexts/user-data-context";
 import { useUserData } from "@/hooks/useUserData";
-import { addBoard } from "@/utils/data-utils";
 import * as Dialog from "@radix-ui/react-dialog";
 import clsx from "clsx";
 import { PlusCircle } from "lucide-react";

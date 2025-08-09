@@ -1,22 +1,20 @@
-import TaskCard from "@/components/task-card";
 import { jetbrains, nunito } from "@/config/fonts";
 import clsx from "clsx";
-import { TextField, Flex, Separator } from "@radix-ui/themes";
-import { Search, Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon, PlusSquareIcon, CloudUploadIcon } from "lucide-react";
+import { Separator } from "@radix-ui/themes";
+import { Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon, PlusSquareIcon, CloudUploadIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core";
-import { SortableContext } from "@dnd-kit/sortable";
 import { SortableTaskCard } from "@/components/sortable-task-card";
 import { initiateLogin } from "@/utils/auth-utils";
 import CreateTaskDialog from "@/components/modals/create-task";
 import CreateBoardDialog from "@/components/modals/create-board";
 import { useUserDataContext } from "@/contexts/user-data-context";
 import { useAuth } from "@/contexts/auth-context";
+import Image from "next/image";
 
 export default function Home() {
   const { user, logout } = useAuth()
 
-  const { boards, removeBoard, editTask } = useUserDataContext()
+  const { boards, removeBoard } = useUserDataContext()
 
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const activeBoard = useMemo(
@@ -169,7 +167,7 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center gap-4">
                 <div className="flex flex-col items-center gap-2">
 
-                  <img
+                  <Image
                     src={user.avatar || "/default-avatar.png"}
                     alt="Avatar"
                     className="w-7 h-7 rounded-full"
