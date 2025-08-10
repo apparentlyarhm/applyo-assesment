@@ -10,6 +10,9 @@ import CreateBoardDialog from "@/components/modals/create-board";
 import { useUserDataContext } from "@/contexts/user-data-context";
 import { useAuth } from "@/contexts/auth-context";
 import { Task } from "@/hooks/useUserData";
+import { toast } from 'sonner';
+
+    
 
 export default function Home() {
   const { user, logout } = useAuth()
@@ -69,6 +72,18 @@ export default function Home() {
   const handleCancelEdit = () => {
     setIsEditingBoardName(false);
   };
+
+  const syncHandler = () => {
+    toast.promise(
+      syncToDatabase(),
+
+      {
+        loading: 'Cloud sync in progress...',
+        success: 'Data synced successfully!',
+        error: (err) => `${err.message}`,
+      }
+    )
+  }
 
   return (
     <div className="flex p-10 gap-5 h-screen w-screen bg-gray-50 items-center text-center justify-center">
@@ -219,7 +234,7 @@ export default function Home() {
 
               <div className="flex flex-col gap-5">
                 <button
-                  onClick={syncToDatabase}
+                  onClick={syncHandler}
                   disabled={isSyncing}
                   className={clsx(
                     "flex items-center gap-2 text-xs px-4 py-2 rounded-xl",

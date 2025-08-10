@@ -64,10 +64,20 @@ export function useUserData(userEmail: string | null) {
                         setIsLoading(false);
 
                         return; // Exit here, we are done
+                    } else {
+
+                        // same block is used below
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                throw new Error("Your session has expired. Please log in again.");
+
+                            }
+                            throw new Error("Failed to sync with the server. Please try again later.");
+                        }
                     }
 
                 } catch (error) {
-                    console.error("Failed to fetch cloud data, falling back to local.", error);
+                    throw error
                 }
             }
 
@@ -197,7 +207,7 @@ export function useUserData(userEmail: string | null) {
         });
     }, []);
 
-    // Example for drag-and-drop to change priority
+    // Example for drag-and-drop to change priority- was implemented before, now removed.
     const setTaskPriority = (boardId: string, taskId: string, priority: boolean) => {
         editTask(boardId, taskId, { priority });
     };
@@ -210,7 +220,7 @@ export function useUserData(userEmail: string | null) {
 
         setIsSyncing(true);
         try {
-            await fetch('/api/data/sync', {
+            const r = await fetch('/api/data/sync', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -219,10 +229,17 @@ export function useUserData(userEmail: string | null) {
                 body: JSON.stringify({ boards: userData.boards }),
             });
 
+            if (!r.ok) {
+                if (r.status === 401) {
+                    throw new Error("Your session has expired. Please log in again.");
+
+                }
+                throw new Error("Failed to sync with the server. Please try again later.");
+            }
+
         } catch (error) {
 
-            // could show an error toast here
-
+            throw new Error("Failed to sync with the server. Are you online?");
         } finally {
             setIsSyncing(false);
         }
@@ -241,6 +258,5 @@ export function useUserData(userEmail: string | null) {
         removeBoard,
         removeTask,
         setTaskPriority,
-        // syncToDatabase
     };
 }
