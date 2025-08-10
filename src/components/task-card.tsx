@@ -72,7 +72,7 @@ export default function TaskCard({
         <Flex justify="between" pt="2" style={{ borderTop: '1px solid var(--gray-a3)' }}>
           
           <Text size="1" color="gray">
-            Created: {createdAt}
+            Created: {formatDistanceToNowStrict(new Date(createdAt), { addSuffix: true })}
           </Text>
 
           {dueDate ? (
