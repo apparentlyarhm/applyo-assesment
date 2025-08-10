@@ -7,6 +7,7 @@ import clsx from 'clsx'
 import { formatDistanceToNowStrict, isPast } from 'date-fns'
 
 export type TaskCardProps = {
+  isMobile: boolean | null
   id: string;
   boardId: string;
   title: string
@@ -21,6 +22,7 @@ export default function TaskCard({
   boardId,
   title,
   description,
+  isMobile,
   createdAt,
   dueDate,
   status,
@@ -39,18 +41,27 @@ export default function TaskCard({
   };
 
   return (
-    <Card size="1" variant="classic" className="w-full min-w-md hover:bg-gray-200 cursor-pointer shadow-none">
-      <Flex direction="column" gap="5">
-
-        <Flex justify="between" align="start" gap='2'>
-
-          <Text as="div" size="3" weight="bold" className={clsx("tracking-tight", nunito.className)}>
+    <Card
+      size={isMobile ? '1' : '2'}
+      variant="classic"
+      className={clsx(
+        'w-full min-w-[16rem] hover:bg-gray-200 cursor-pointer shadow-none',
+        isMobile ? 'p-3' : 'p-4'
+      )}
+    >
+      <Flex direction="column" gap={isMobile ? '3' : '5'}>
+        <Flex justify="between" align="start" gap={isMobile ? '1' : '2'}>
+          <Text
+            as="div"
+            size={isMobile ? '2' : '3'}
+            weight="bold"
+            className={clsx('tracking-tight', nunito.className)}
+          >
             {title}
           </Text>
 
-          <Flex align="center" gap="1">
-
-            <Text size="1" color={isCompleted ? 'green' : 'gray'}>
+          <Flex align="center" gap={isMobile ? '1' : '2'}>
+            <Text size={isMobile ? '1' : '2'} color={isCompleted ? 'green' : 'gray'}>
               {isCompleted ? 'Completed' : 'Pending'}
             </Text>
 
@@ -58,37 +69,42 @@ export default function TaskCard({
               checked={isCompleted}
               onCheckedChange={handleStatusToggle}
               color={isCompleted ? 'green' : 'gray'}
+              style={{
+                transform: isMobile ? 'scale(0.85)' : 'scale(1)',
+                transformOrigin: 'right center',
+              }}
             />
-
           </Flex>
         </Flex>
 
         {description && (
-          <Text size="1" color="gray">
+          <Text size={isMobile ? '1' : '2'} color="gray">
             {description}
           </Text>
         )}
 
-        <Flex justify="between" pt="2" style={{ borderTop: '1px solid var(--gray-a3)' }}>
-          
-          <Text size="1" color="gray">
+        <Flex
+          justify="between"
+          pt={isMobile ? '1' : '2'}
+          style={{ borderTop: '1px solid var(--gray-a3)' }}
+        >
+          <Text size={isMobile ? '1' : '2'} color="gray">
             Created: {createdAt}
           </Text>
 
           {dueDate ? (
             <Text
-              size="1"
+              size={isMobile ? '1' : '2'}
               color={isPast(dueDate) && !isCompleted ? 'red' : 'gray'}
               weight={isPast(dueDate) && !isCompleted ? 'medium' : 'regular'}
             >
               Due {formatDistanceToNowStrict(dueDate, { addSuffix: true })}
             </Text>
           ) : (
-            <Text size="1" color="gray">
+            <Text size={isMobile ? '1' : '2'} color="gray">
               No due date
             </Text>
           )}
-
         </Flex>
       </Flex>
     </Card>

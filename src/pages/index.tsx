@@ -1,7 +1,7 @@
 import { jetbrains, nunito } from "@/config/fonts";
 import clsx from "clsx";
-import { Separator } from "@radix-ui/themes";
-import { Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon, PlusSquareIcon, CloudUploadIcon, Check, X } from "lucide-react";
+import { Separator, Tabs } from "@radix-ui/themes";
+import { Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon, PlusSquareIcon, CloudUploadIcon, Check, X, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { SortableTaskCard } from "@/components/sortable-task-card";
 import { initiateLogin } from "@/utils/auth-utils";
@@ -12,9 +12,10 @@ import { useAuth } from "@/contexts/auth-context";
 import { Task } from "@/hooks/useUserData";
 import { toast } from 'sonner';
 
-    
+
 
 export default function Home() {
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
   const { user, logout } = useAuth()
 
   const {
@@ -42,6 +43,13 @@ export default function Home() {
     }
   }, [boards, activeBoardId]);
 
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const handleDeleteBoard = (boardIdToDelete: string) => {
     if (window.confirm("Are you sure you want to delete this board and all its tasks?")) {
       if (activeBoardId === boardIdToDelete) {
@@ -66,7 +74,7 @@ export default function Home() {
   const handleSaveEdit = () => {
     if (!activeBoard) return;
     editBoardName(activeBoard.id, editedBoardName);
-    setIsEditingBoardName(false); 
+    setIsEditingBoardName(false);
   };
 
   const handleCancelEdit = () => {
@@ -83,6 +91,88 @@ export default function Home() {
         error: (err) => `${err.message}`,
       }
     )
+  }
+
+  if (isMobile) {
+    return (
+      // Main mobile container
+      <div className={clsx("flex flex-col p-4 sm:p-6 gap-5 h-screen w-screen bg-gray-50", nunito.className)}>
+        {activeBoard ? (
+          <>
+            {/* --- NEW: Active Board Name Display --- */}
+            {/* This is placed at the top to give immediate context. */}
+            <div className="flex items-center justify-center gap-3 pt-4">
+              <LayoutGrid className="h-6 w-6 text-gray-400" />
+              <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+                {activeBoard.title}
+              </h1>
+            </div>
+
+            {/* --- NEW: Radix UI Tabs for Task Lists --- */}
+            <Tabs.Root defaultValue="priority" className="flex flex-col flex-1 w-full max-w-md mx-auto">
+              {/* Tab Triggers (The buttons to switch tabs) */}
+              <Tabs.List className="flex bg-gray-200 p-1 rounded-lg w-full">
+                <Tabs.Trigger
+                  value="priority"
+                  className="flex-1 px-4 py-2 text-sm font-semibold rounded-md text-gray-600 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
+                >
+                  Priority
+                </Tabs.Trigger>
+                <Tabs.Trigger
+                  value="non-priority"
+                  className="flex-1 px-4 py-2 text-sm font-semibold rounded-md text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-800 data-[state=active]:shadow-sm transition-all"
+                >
+                  Non-priority
+                </Tabs.Trigger>
+              </Tabs.List>
+
+              {/* Tab Content Panels */}
+              {/* Priority Tasks Panel */}
+              <Tabs.Content value="priority" className="flex-1 mt-4 overflow-hidden">
+                
+                <div className="flex flex-col items-center gap-3 overflow-y-auto h-full p-1">
+                  {priorityTasks.length > 0 ? (
+                    priorityTasks.map((task) => (
+                      <SortableTaskCard key={task.id} {...task} boardId={activeBoard.id} isMobile={isMobile} />
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                      <p className="mb-4">No priority tasks yet.</p>
+                      <CreateTaskDialog email={user ? user.id : "anonymous"} currentBoard={activeBoard} />
+                    </div>
+                  )}
+                </div>
+              </Tabs.Content>
+
+              {/* Non-priority Tasks Panel */}
+              <Tabs.Content value="non-priority" className="flex-1 mt-4 overflow-hidden">
+                <div className="flex flex-col items-center gap-3 overflow-y-auto h-full p-1">
+                  {nonPriorityTasks.length > 0 ? (
+                    nonPriorityTasks.map((task) => (
+                      <SortableTaskCard key={task.id} {...task} isMobile={isMobile} />
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                      <p className="mb-4">No non-priority tasks yet.</p>
+                      <CreateTaskDialog email={user ? user.id : "anonymous"} currentBoard={activeBoard} />
+                    </div>
+                  )}
+                </div>
+              </Tabs.Content>
+            </Tabs.Root>
+          </>
+        ) : (
+          // This part remains the same, it's already well-suited for this context
+          <div className="flex flex-col gap-6 items-center text-center justify-center h-full w-full">
+            <img src={"/svgs/tasks.svg"} className="h-10 w-10 opacity-25" />
+            <p className={clsx("text-gray-500 text-xs italic", jetbrains.className)}>
+              Select a board to view tasks!
+            </p>
+          </div>
+        )}
+      </div>
+    );
+
   }
 
   return (
@@ -139,7 +229,7 @@ export default function Home() {
                 <div className="flex flex-col items-center gap-3 overflow-y-auto flex-1">
                   {priorityTasks.length > 0 ? (
                     priorityTasks.map((task) => (
-                      <SortableTaskCard key={task.id} {...task} boardId={activeBoard.id} />
+                      <SortableTaskCard key={task.id} {...task} boardId={activeBoard.id} isMobile={isMobile} />
                     ))
                   ) : (
                     <CreateTaskDialog email={user ? user.id : "anonymous"} currentBoard={activeBoard} />
@@ -161,7 +251,7 @@ export default function Home() {
                 <div className="flex flex-col items-center gap-3 overflow-y-auto flex-1">
                   {nonPriorityTasks.length > 0 ? (
                     nonPriorityTasks.map((task) => (
-                      <SortableTaskCard key={task.id} {...task} />
+                      <SortableTaskCard key={task.id} {...task} isMobile={isMobile} />
                     ))
                   ) : (
                     <CreateTaskDialog email={user ? user.id : "anonymous"} currentBoard={activeBoard} />
@@ -254,7 +344,7 @@ export default function Home() {
                   <LogOut size={16} className="mr-1" />
                   Log out
                 </button>
-                
+
               </div>
 
             </div>
