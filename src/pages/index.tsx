@@ -5,14 +5,14 @@ import { Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon, PlusSqu
 import { useEffect, useMemo, useState } from "react";
 import { SortableTaskCard } from "@/components/sortable-task-card";
 import { initiateLogin } from "@/utils/auth-utils";
-import CreateTaskDialog from "@/components/modals/create-task";
+import { CreateTaskDialog } from "@/components/modals/create-task";
 import CreateBoardDialog from "@/components/modals/create-board";
 import { useUserDataContext } from "@/contexts/user-data-context";
 import { useAuth } from "@/contexts/auth-context";
 import { Task } from "@/hooks/useUserData";
 import { toast } from 'sonner';
 
-    
+
 
 export default function Home() {
   const { user, logout } = useAuth()
@@ -66,7 +66,7 @@ export default function Home() {
   const handleSaveEdit = () => {
     if (!activeBoard) return;
     editBoardName(activeBoard.id, editedBoardName);
-    setIsEditingBoardName(false); 
+    setIsEditingBoardName(false);
   };
 
   const handleCancelEdit = () => {
@@ -105,16 +105,43 @@ export default function Home() {
               <button onClick={handleCancelEdit} className="p-1 rounded-md hover:bg-red-100 hover:cursor-pointer"><X className="text-red-600" size={20} /></button>
             </>
           ) : (
-            <>
-              <p className="font-extrabold text-3xl py-3 pl-4  text-gray-900">
-                {activeBoard ? activeBoard.title : "Select a Board"}
-              </p>
+            <div className="flex flex-row justify-between items-center w-full px-4">
+
+              <div className="flex flex-row items-center gap-2">
+                <p className="font-extrabold text-3xl text-gray-900">
+                  {activeBoard ? activeBoard.title : "Select a Board"}
+                </p>
+                {activeBoard && (
+                  <button
+                    onClick={handleStartEdit}
+                    className="hover:bg-gray-200 hover:cursor-pointer rounded-md p-1"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                )}
+              </div>
+
               {activeBoard && (
-                <button onClick={handleStartEdit} className="hover:bg-gray-200 hover:cursor-pointer rounded-md p-1">
-                  <Pencil size={18} />
-                </button>
+                <CreateTaskDialog
+                  email={user ? user.id : "anonymous"}
+                  currentBoard={activeBoard}
+                >
+                  <div className="group flex flex-row items-center gap-2 px-5 py-6 border hover:border-gray-200 border-black cursor-pointer hover:bg-white hover:text-black bg-black text-white rounded-3xl transition-colors duration-150">
+                    <Plus size={18} />
+
+                    <p
+                      className={clsx(
+                        "",
+                        nunito.className
+                      )}
+                    >
+                      Create a task
+                    </p>
+                  </div>
+                </CreateTaskDialog>
               )}
-            </>
+
+            </div>
           )}
         </div>
 
@@ -142,7 +169,7 @@ export default function Home() {
                       <SortableTaskCard key={task.id} {...task} boardId={activeBoard.id} />
                     ))
                   ) : (
-                    <CreateTaskDialog email={user ? user.id : "anonymous"} currentBoard={activeBoard} />
+                    <p className={clsx("text-gray-500 text-sm pt-10", nunito.className)} >Nothing's available!</p>
                   )}
                 </div>
               </div>
@@ -164,7 +191,7 @@ export default function Home() {
                       <SortableTaskCard key={task.id} {...task} />
                     ))
                   ) : (
-                    <CreateTaskDialog email={user ? user.id : "anonymous"} currentBoard={activeBoard} />
+                    <p className={clsx("text-gray-500 text-sm pt-10", nunito.className)} >Nothing's available!</p>
                   )}
                 </div>
               </div>
@@ -200,9 +227,9 @@ export default function Home() {
             <div
               onClick={() => setActiveBoardId(item.id)}
               key={item.id}
-              className={clsx("flex justify-between items-center py-4 px-2 hover:bg-gray-200 rounded-lg cursor-pointer", 
-                nunito.className, 
-                item.id===activeBoardId ? "bg-gray-100" : ""
+              className={clsx("flex justify-between items-center py-4 px-2 hover:bg-gray-200 rounded-lg cursor-pointer",
+                nunito.className,
+                item.id === activeBoardId ? "bg-gray-100" : ""
               )}
             >
               <p className="text-md tracking-tight">{item.title}</p>
@@ -257,7 +284,7 @@ export default function Home() {
                   <LogOut size={16} className="mr-1" />
                   Log out
                 </button>
-                
+
               </div>
 
             </div>

@@ -1,8 +1,9 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import TaskCard, { TaskCardProps } from "./task-card";
+import TaskCard from "./task-card";
+import { Task } from "@/hooks/useUserData";
 
-export function SortableTaskCard(props: TaskCardProps) {
+export function SortableTaskCard(props: Task) {
   const {
     attributes,
     listeners,
