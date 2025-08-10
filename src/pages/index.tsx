@@ -169,7 +169,7 @@ export default function Home() {
                       <SortableTaskCard key={task.id} {...task} boardId={activeBoard.id} />
                     ))
                   ) : (
-                    <p className={clsx("text-gray-500 text-sm pt-10", nunito.className)} >Nothing's available!</p>
+                    <p className={clsx("text-gray-500 text-sm pt-10", nunito.className)} >{"Nothing's available!"}</p>
                   )}
                 </div>
               </div>
@@ -191,7 +191,7 @@ export default function Home() {
                       <SortableTaskCard key={task.id} {...task} />
                     ))
                   ) : (
-                    <p className={clsx("text-gray-500 text-sm pt-10", nunito.className)} >Nothing's available!</p>
+                    <p className={clsx("text-gray-500 text-sm pt-10", nunito.className)} >{"Nothing's available!"}</p>
                   )}
                 </div>
               </div>
