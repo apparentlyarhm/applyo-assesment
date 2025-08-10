@@ -200,7 +200,10 @@ export default function Home() {
             <div
               onClick={() => setActiveBoardId(item.id)}
               key={item.id}
-              className={clsx("flex justify-between items-center py-4 px-2 hover:bg-gray-200 rounded-lg cursor-pointer", nunito.className)}
+              className={clsx("flex justify-between items-center py-4 px-2 hover:bg-gray-200 rounded-lg cursor-pointer", 
+                nunito.className, 
+                item.id===activeBoardId ? "bg-gray-100" : ""
+              )}
             >
               <p className="text-md tracking-tight">{item.title}</p>
               <Trash onClick={() => handleDeleteBoard(item.id)} size={26} className="p-1 text-red-400 hover:bg-red-100 rounded-xl" />
