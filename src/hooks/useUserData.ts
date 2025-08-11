@@ -17,8 +17,15 @@ export type Board = {
     tasks: Task[];
 };
 
+// dont really need to export
+interface StoredUserData {
+    data: UserData;
+    owner: string | 'anonymous'; // Track who this data belongs to
+}
+
 export type UserData = {
     boards: Board[];
+    lastUpdated?: number
 };
 
 export type TaskStatus = 'pending' | 'completed';
@@ -32,71 +39,95 @@ export function useUserData(userEmail: string | null) {
     const [isLoading, setIsLoading] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
 
+    const [conflict, setConflict] = useState<{ local: UserData, remote: UserData } | null>(null);
+
+    // Load from local first
     useEffect(() => {
-        const storageKey = userEmail ? `userData-${userEmail}` : null;
-        if (!storageKey) {
-            setIsLoading(false);
+        const localStore = localStorage.getItem(STORAGE_KEY);
+
+        if (localStore) {
+            const stored: StoredUserData = JSON.parse(localStore);
+            if (!userEmail || stored.owner === userEmail) {
+                setUserData(stored.data);
+            }
+        }
+
+        setIsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        // This effect handles the transition from anonymous to logged-in
+        if (!userEmail || userEmail === 'anonymous') {
+
+            // If user logs out or is anonymous, do nothing here.
+            // The logic below will clear data if needed.
             return;
         }
 
-        const token = localStorage.getItem('app_token')
-        const loadData = async () => {
-            setIsLoading(true);
+        const token = localStorage.getItem('app_token');
+        if (!token) return;
 
-            // attempt to fetch from DB if it's a real user
-            // TODO: fix logic
-            if (userEmail && userEmail !== 'anonymous' || token) {
-                try {
-                    const response = await fetch('/api/data/sync', {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
+        const handleLoginSync = async () => {
+            const localStore = localStorage.getItem(STORAGE_KEY);
 
-                    });
-                    if (response.ok) {
-                        const { data } = await response.json();
-
-                        setUserData({ boards: data.boards });
-
-                        localStorage.setItem(storageKey, JSON.stringify({ boards: data.boards }));
-                        setIsLoading(false);
-
-                        return; // Exit here, we are done
-                    } else {
-
-                        // same block is used below
-                        if (!response.ok) {
-                            if (response.status === 401) {
-                                throw new Error("Your session has expired. Please log in again.");
-
-                            }
-                            throw new Error("Failed to sync with the server. Please try again later.");
-                        }
-                    }
-
-                } catch (error) {
-                    throw error
+            let anonymousData: UserData | null = null;
+            if (localStore) {
+                const stored: StoredUserData = JSON.parse(localStore);
+                if (stored.owner === 'anonymous' && stored.data?.boards?.length > 0) {
+                    anonymousData = stored.data;
                 }
             }
 
-            // --- FALLBACK LOGIC ---
-            // This runs for anonymous users, or if the API fetch fails or returns a 404.
-            const localData = localStorage.getItem(storageKey);
-            setUserData(localData ? JSON.parse(localData) : { boards: [] });
-            setIsLoading(false);
+            try {
+                // Always fetch remote data on login
+                const res = await fetch('/api/data/sync', {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error('Failed to fetch remote data');
+
+                const remote = await res.json();
+                const remoteData: UserData = { boards: remote.data.boards, lastUpdated: new Date(remote.data.lastUpdated).getTime() };
+
+                if (anonymousData && remoteData?.boards?.length > 0) {
+                    // CONFLICT DETECTED! We have both anonymous local data and existing remote data.
+                    console.log("Conflict detected. Prompting user.");
+                    setConflict({ local: anonymousData, remote: remoteData });
+                    // We stop here and wait for the user to resolve the conflict.
+
+                    return;
+                } else if (anonymousData) {
+                    // No remote data, "claim" the anonymous data
+                    console.log("No remote data. Migrating local data to new user.");
+                    const migratedData = { ...anonymousData, lastUpdated: new Date().getTime() };
+
+                    setUserData(migratedData);
+                } else {
+                    // No anonymous data, just use the remote data
+                    setUserData(remoteData);
+                }
+            } catch (err) {
+                console.error('Error during login sync', err);
+                // TODO: maybe show error
+            }
         };
 
-        loadData();
+        handleLoginSync();
+
     }, [userEmail]);
 
-
     useEffect(() => {
-        if (userData && !isLoading) { // Don't save during initial load
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+        if (userData && !isLoading) {
+
+            const dataToStore: StoredUserData = {
+                data: userData,
+                owner: userEmail || 'anonymous'
+            };
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore));
         }
-    }, [userData, isLoading]);
+    }, [userData, isLoading, userEmail]);
 
 
     const addBoard = useCallback((title: string) => {
@@ -106,10 +137,17 @@ export function useUserData(userEmail: string | null) {
             tasks: [], // Start with an empty tasks array
         };
 
-        setUserData(prev => ({
-            ...prev,
-            boards: [...(prev?.boards ?? []), newBoard],
-        }));
+        setUserData(prev => {
+            const now = Date.now(); // for timestamp tracking
+            if (!prev) {
+                return { boards: [newBoard], updatedAt: now };
+            }
+            return {
+                ...prev,
+                boards: [...prev.boards, newBoard],
+                updatedAt: now
+            };
+        });
 
         return newBoard;
 
@@ -212,43 +250,64 @@ export function useUserData(userEmail: string | null) {
         editTask(boardId, taskId, { priority });
     };
 
-    const syncToDatabase = useCallback(async () => {
-        // Don't sync if there's no data or not logged in with a real ID or token doesnt exist..
-        const token = localStorage.getItem('app_token')
-
-        if (!userData || !token || !userEmail || userEmail === 'anonymous') return;
+    const syncToDatabase = useCallback(async (dataToSync: UserData | null = userData) => {
+        const token = localStorage.getItem('app_token');
+        if (!userEmail || userEmail === 'anonymous' || !token || !dataToSync) return;
 
         setIsSyncing(true);
         try {
-            const r = await fetch('/api/data/sync', {
+            const res = await fetch('/api/data/sync', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ boards: userData.boards }),
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(dataToSync)
             });
 
-            if (!r.ok) {
-                if (r.status === 401) {
-                    throw new Error("Your session has expired. Please log in again.");
+            if (!res.ok) throw new Error('Failed to sync to server');
+            const { data } = await res.json();
+            const syncedData = { boards: data.boards, lastUpdated: new Date(data.lastUpdated).getTime() };
 
-                }
-                throw new Error("Failed to sync with the server. Please try again later.");
-            }
+            setUserData(syncedData);
+            setConflict(null);
 
-        } catch (error) {
+        } catch (err) {
+            console.error('Sync failed', err);
 
-            throw new Error("Failed to sync with the server. Are you online?");
         } finally {
             setIsSyncing(false);
+
         }
-    }, [userData, userEmail]);
+    }, [userEmail, userData]);
+
+    const resolveConflictKeepLocal = useCallback(() => {
+        if (!conflict) return;
+
+        // Simple merge: combine board arrays. A more sophisticated merge might check for duplicate board names.
+        // we are getting dangerously close to git merging procedure
+        const mergedBoards = [...conflict.local.boards, ...conflict.remote.boards];
+        const mergedData: UserData = {
+            boards: mergedBoards,
+            lastUpdated: new Date().getTime() // New timestamp for the merge action
+        };
+
+        // Set the merged data and then sync it to the server
+        setUserData(mergedData);
+        syncToDatabase(mergedData);
+        setConflict(null);
+    }, [conflict, syncToDatabase]);
+
+    const resolveConflictUseServer = useCallback(() => {
+        if (!conflict) return;
+        // Simply adopt the server's version
+        setUserData(conflict.remote);
+        setConflict(null);
+
+    }, [conflict]);
 
     return {
         isLoading,
         boards: userData?.boards ?? [],
         isSyncing,
+        conflict,
         getBoard,
         addBoard,
         editBoardName,
@@ -258,5 +317,7 @@ export function useUserData(userEmail: string | null) {
         removeBoard,
         removeTask,
         setTaskPriority,
+        resolveConflictKeepLocal,
+        resolveConflictUseServer
     };
 }

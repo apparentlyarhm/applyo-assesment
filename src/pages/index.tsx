@@ -1,6 +1,6 @@
 import { jetbrains, nunito } from "@/config/fonts";
 import clsx from "clsx";
-import { Separator } from "@radix-ui/themes";
+import { Separator, Tooltip } from "@radix-ui/themes";
 import { Pencil, Trash, LogOut, Plus, PlusCircle, CloudCheck, User2Icon, PlusSquareIcon, CloudUploadIcon, Check, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { SortableTaskCard } from "@/components/sortable-task-card";
@@ -22,7 +22,10 @@ export default function Home() {
     removeBoard,
     editBoardName,
     isSyncing,
-    syncToDatabase
+    syncToDatabase,
+    conflict,
+    resolveConflictKeepLocal,
+    resolveConflictUseServer
   } = useUserDataContext()
 
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
@@ -83,6 +86,42 @@ export default function Home() {
         error: (err) => `${err.message}`,
       }
     )
+  }
+
+  if (conflict) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md flex flex-col gap-6">
+
+          <h2 className={clsx("text-2xl font-bold tracking-tight text-red-600", jetbrains.className)}>
+            {"Data Conflict!"}
+          </h2>
+
+          <p className={clsx("text-gray-700 text-sm", nunito.className)}>
+            {"You have unsaved local data from a previous session"}.<br />
+            {"How would you like to proceed?"}
+          </p>
+
+          <div className={clsx("flex flex-col gap-3 text-sm", nunito.className)}>
+
+            <button
+              onClick={resolveConflictKeepLocal}
+              className="bg-blue-600 text-white py-3 rounded-lg cursor-pointer font-semibold hover:bg-blue-700 transition"
+            >
+              {"Merge and Save Local Data to Cloud"}
+            </button>
+
+            <button
+              onClick={resolveConflictUseServer}
+              className="bg-gray-100 text-gray-700 py-3 rounded-lg cursor-pointer font-semibold hover:bg-gray-200 transition"
+            >
+              {"Discard Local Data and Use Cloud Version"}
+            </button>
+
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -250,7 +289,7 @@ export default function Home() {
                   <img
                     src={user.avatar || "/default-avatar.png"}
                     alt="Avatar"
-                    className="w-7 h-7 rounded-full"
+                    className="w-9 h-9 rounded-full"
                   />
 
                   <span className="text-xs font-medium text-gray-700">{user.id}</span>
@@ -262,28 +301,31 @@ export default function Home() {
 
               <Separator orientation={"vertical"} size={"3"} />
 
-              <div className="flex flex-col gap-5">
-                <button
-                  onClick={syncHandler}
-                  disabled={isSyncing}
-                  className={clsx(
-                    "flex items-center gap-2 text-xs px-4 py-2 rounded-xl",
-                    isSyncing
-                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      : "bg-blue-50 text-blue-500 hover:cursor-pointer hover:bg-blue-100"
-                  )}
-                >
-                  <CloudUploadIcon size={16} />
-                  {isSyncing ? "Syncing..." : "Sync to cloud"}
-                </button>
+              <div className="flex flex-row gap-5">
 
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-2 text-xs text-red-500 hover:cursor-pointer bg-red-50 px-4 py-2 rounded-xl hover:bg-red-100 hover:text-red-600"
-                >
-                  <LogOut size={16} className="mr-1" />
-                  Log out
-                </button>
+                <Tooltip content="Sync to cloud">
+                  <button
+                    onClick={syncHandler}
+                    disabled={isSyncing}
+                    className={clsx(
+                      "flex items-center gap-2 text-xs px-4 py-3 rounded-xl",
+                      isSyncing
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-blue-50 text-blue-500 hover:cursor-pointer hover:bg-blue-100"
+                    )}
+                  >
+                    <CloudUploadIcon size={20} />
+                  </button>
+                </Tooltip>
+
+                <Tooltip content="Logout!">
+                  <button
+                    onClick={logout}
+                    className="flex items-center gap-2 text-xs text-red-500 hover:cursor-pointer bg-red-50 px-4 py-3 rounded-xl hover:bg-red-100 hover:text-red-600"
+                  >
+                    <LogOut size={20} className="mr-1" />
+                  </button>
+                </Tooltip>
 
               </div>
 
