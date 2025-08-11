@@ -172,6 +172,8 @@ export function EditTaskDialog({ task, boardId, children }: EditTaskDialogProps)
         const updates: Partial<Task> = {
             title: title.trim(),
             description: description.trim(),
+            priority: priority,
+            dueDate: dueDate ? dueDate.toDateString() : initialDueDate?.toISOString()
         };
 
         editTask(boardId, task.id, updates);
